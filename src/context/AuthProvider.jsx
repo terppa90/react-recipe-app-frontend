@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AuthContext from './AuthContext';
+const baseURL = import.meta.env.VITE_API_URL;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -9,7 +10,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get('/api/auth/user');
+        const res = await axios.get(`${baseURL}/api/auth/user`);
         setUser(res.data);
       } catch {
         setUser(null);

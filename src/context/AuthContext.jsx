@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+const baseURL = import.meta.env.VITE_API_URL;
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -15,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get('/api/auth/user', {
+        const res = await axios.get(`${baseURL}/api/auth/user`, {
           withCredentials: true,
         });
         setCurrentUser(res.data);
@@ -28,14 +29,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const register = async (username, password) => {
-    await axios.post('/api/auth/register', { username, password });
+    await axios.post(`${baseURL}/api/auth/register`, { username, password });
     // const res = await axios.get('/api/auth/user', { withCredentials: true });
     // setUser(res.data);
   };
 
   const login = async ({ username, password }) => {
     try {
-      const res = await axios.post('/api/auth/login', { username, password });
+      const res = await axios.post(`${baseURL}/api/auth/login`, {
+        username,
+        password,
+      });
       console.log('Kirjautuneen käyttäjän tiedot: ', res.data);
 
       const userRes = await axios.get('/api/auth/user', {
@@ -51,7 +55,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout', {}, { withCredentials: true });
+      await axios.post(
+        `${baseURL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
     } catch (err) {
       console.error('Virhe uloskirjautumisessa:', err);
     }
