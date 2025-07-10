@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
       });
       console.log('Kirjautuneen käyttäjän tiedot: ', res.data);
 
-      const userRes = await axios.get('/api/auth/user', {
+      const userRes = await axios.get(`${baseURL}/api/auth/user`, {
         withCredentials: true,
       });
 
