@@ -1,0 +1,393 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Button } from '../components/ui/button';
+import LoaderOverlay from '../components/ui/loaderOverlay';
+import { useAuth } from '../context/AuthContext';
+import { Textarea } from '../components/ui/textarea';
+import MDEditor from '@uiw/react-md-editor';
+import useDarkMode from '../hooks/useDarkMode';
+
+export default function RecipeDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [recipe, setRecipe] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const { currentUser } = useAuth();
+  const baseURL = import.meta.env.VITE_API_URL;
+  const maxCommentLength = 500;
+  const [notFound, setNotFound] = useState(false);
+  const isDarkMode = useDarkMode();
+
+  // useEffect(() => {
+  //   axios
+  //     .get(`${baseURL}/api/recipes/${id}`)
+  //     .then((res) => setRecipe(res.data))
+  //     .catch((err) => console.error('Virhe reseptin haussa:', err));
+  // }, [id]);
+
+  useEffect(() => {
+    fetchRecipe();
+  }, [id]);
+
+  const fetchRecipe = async () => {
+    try {
+      const res = await axios.get(`${baseURL}/api/recipes/${id}`);
+      setRecipe(res.data);
+    } catch (err) {
+      console.error('Virhe reseptin haussa:', err);
+      if (err.response && err.response.status === 404) {
+        setNotFound(true);
+      } else {
+        setNotFound(true);
+      }
+    }
+  };
+
+  const submitReview = async () => {
+    setErrorMessage('');
+
+    // Validointi: arvosana on pakollinen
+    if (!rating || rating < 1 || rating > 5) {
+      setErrorMessage('Valitse arvosana välillä 1–5.');
+      return;
+    }
+
+    // Validointi: kommentti ei saa olla tyhjä
+    if (!comment || comment.trim() === '') {
+      setErrorMessage('Kirjoita kommentti.');
+      return;
+    }
+
+    if (comment.length > maxCommentLength) {
+      setErrorMessage(
+        `Kommentti saa olla enintään ${maxCommentLength} merkkiä pitkä.`
+      );
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${baseURL}/api/recipes/${id}/reviews`,
+        { rating, comment },
+        { withCredentials: true }
+      );
+      setReviewSubmitted(true);
+      fetchRecipe(); // Päivitä resepti uusilla arvosteluilla
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.status === 400 &&
+        error.response.data.message === 'Olet jo arvostellut tämän reseptin'
+      ) {
+        setErrorMessage('Olet jo arvostellut tämän reseptin.');
+      } else {
+        setErrorMessage('Jokin meni pieleen arvostelun tallennuksessa.');
+      }
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    const confirm = window.confirm('Haluatko varmasti poistaa arvostelusi?');
+
+    if (!confirm) return;
+
+    try {
+      await axios.delete(`${baseURL}/api/recipes/${id}/reviews`, {
+        withCredentials: true,
+      });
+      fetchRecipe(); // Päivitä näkymä
+    } catch (error) {
+      console.error('Virhe arvostelun poistossa:', error);
+    }
+  };
+
+  // const handleCommentSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!commentText.trim()) return;
+
+  //   try {
+  //     const res = await axios.post(`${baseURL}/api/recipes/${id}/comments`, {
+  //       text: commentText,
+  //       username: currentUser.username,
+  //     });
+  //     setRecipe(res.data);
+  //     setCommentText('');
+  //   } catch (err) {
+  //     console.error('Virhe kommentin lähetyksessä:', err);
+  //   }
+  // };
+
+  const handleDelete = async (id) => {
+    const confirm = window.confirm('Haluatko varmasti poistaa tämän reseptin?');
+    if (!confirm) return;
+
+    setLoading(true);
+
+    try {
+      console.log('Tässä id: ' + id);
+
+      await axios.delete(`${baseURL}/api/recipes/${id}`);
+      navigate('/');
+    } catch (error) {
+      console.error('Virhe poistettaessa:', error);
+    }
+  };
+
+  if (!recipe && !notFound) {
+    return (
+      // <p className="p-6 text-gray-700 dark:text-white">Ladataan reseptiä...</p>
+      <LoaderOverlay message="Ladataan reseptiä..." />
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="text-center mt-20 text-gray-800 dark:text-white">
+        <h1 className="text-3xl font-bold mb-4">404 – Reseptiä ei löytynyt</h1>
+        <p className="mb-6">
+          Etsimääsi reseptiä ei ole olemassa tai se on poistettu.
+        </p>
+        <Link to="/" className="text-blue-500 hover:underline">
+          ← Takaisin etusivulle
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto p-6 space-y-4">
+      <Link to="/" className="text-blue-600 hover:underline dark:text-blue-400">
+        ← Takaisin etusivulle
+      </Link>
+
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+        {recipe.title}
+      </h1>
+
+      {/* Kuvat */}
+      {recipe.images && recipe.images.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {recipe.images.map((img, idx) => (
+            <img
+              key={idx}
+              src={img}
+              alt={`${recipe.title} kuva ${idx + 1}`}
+              className="rounded-xl object-cover max-h-64 w-full"
+            />
+          ))}
+        </div>
+      ) : (
+        recipe.image && (
+          <img
+            src={recipe.image}
+            alt={recipe.title}
+            className="rounded-xl object-cover max-h-64 w-full"
+          />
+        )
+      )}
+
+      {/* Ainekset */}
+      {/* <MDEditor.Markdown source={recipe.ingredients} /> */}
+      <div data-color-mode={isDarkMode ? 'dark' : 'light'}>
+        <h2 className="text-xl my-4 font-semibold mt-4 text-gray-700 dark:text-white">
+          Ainekset:
+        </h2>
+        <MDEditor.Markdown
+          source={recipe.ingredients}
+          className="p-4 rounded-xl prose dark:prose-invert max-w-none !bg-blue-50 dark:!bg-gray-800"
+        />
+        {/* <ul className="list-disc list-inside text-gray-700 dark:text-gray-300">
+          {recipe.ingredients.split(/\r?\n|\r|,/).map((item, i) => (
+            <li key={i}>{item.trim()}</li>
+          ))}
+        </ul> */}
+      </div>
+
+      {/* Ohjeet */}
+      {/* <MDEditor.Markdown source={recipe.instructions} /> */}
+      <div data-color-mode={isDarkMode ? 'dark' : 'light'}>
+        <h2 className="text-xl my-4 font-semibold mt-4 text-gray-700 dark:text-white">
+          Valmistusohjeet:
+        </h2>
+        <MDEditor.Markdown
+          source={recipe.instructions}
+          className="p-4 rounded-xl prose dark:prose-invert max-w-none !bg-blue-50 dark:!bg-gray-800"
+        />
+        {/* <ol className="list-decimal list-inside text-gray-700 dark:text-gray-300 space-y-1">
+          {recipe.instructions
+            .split(/\r?\n|\r|\d+\./)
+            .filter((line) => line.trim() && !/^\d+\.$/.test(line.trim()))
+            .map((step, i) => (
+              <li key={i}>{step.trim()}</li>
+            ))}
+        </ol> */}
+      </div>
+      <div className="mt-4 flex space-x-2">
+        <Link to={`/edit/${recipe._id}`}>
+          <Button size="sm">Muokkaa</Button>
+        </Link>
+        <Button
+          size="sm"
+          variant="destructive"
+          // className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          onClick={() => handleDelete(recipe._id)}
+        >
+          Poista
+        </Button>
+      </div>
+
+      {/* <div className="mt-6">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+          Kommentit
+        </h2>
+        {recipe.comments?.length > 0 ? (
+          <ul className="mt-2 space-y-2">
+            {recipe.comments.map((comment, i) => (
+              <li
+                key={i}
+                className="p-3 bg-gray-100 dark:bg-gray-700 rounded-xl"
+              >
+                <p className="text-sm text-gray-800 dark:text-white font-semibold">
+                  {comment.username}
+                </p>
+                <p className="text-gray-700 dark:text-gray-200">
+                  {comment.text}
+                </p>
+                <span className="text-xs text-gray-500">
+                  {new Date(comment.createdAt).toLocaleDateString('fi-FI')} klo{' '}
+                  {new Date(comment.createdAt).toLocaleTimeString('fi-FI', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 mt-2">Ei vielä kommentteja.</p>
+        )}
+      </div>
+
+      {currentUser && (
+        <form
+          onSubmit={handleCommentSubmit}
+          className="mt-4 flex flex-col gap-2"
+        >
+          <textarea
+            className="w-full border p-2 rounded-md"
+            rows={3}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Kirjoita kommentti..."
+          />
+          <Button type="submit">Lähetä kommentti</Button>
+        </form>
+      )} */}
+
+      <div
+        className="mt-6 space-y-4"
+        data-color-mode={isDarkMode ? 'dark' : 'light'}
+      >
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-white">
+          Arvostelut:
+        </h2>
+
+        {recipe.reviews && recipe.reviews.length > 0 ? (
+          recipe.reviews.map((rev, i) => (
+            <div
+              key={i}
+              className="border rounded p-3 !bg-blue-50 dark:!bg-gray-800"
+            >
+              <p className="font-semibold text-gray-800 dark:text-white">
+                {rev.username}
+              </p>
+              <p className="text-yellow-500">
+                {'★'.repeat(rev.rating)}
+                {'☆'.repeat(5 - rev.rating)}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300 break-words whitespace-pre-wrap">
+                {rev.comment}
+              </p>
+              <span className="text-xs text-gray-500">
+                {new Date(rev.createdAt).toLocaleDateString('fi-FI')} klo{' '}
+                {new Date(rev.createdAt).toLocaleTimeString('fi-FI', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+
+              {currentUser?.username === rev.username && (
+                <div className="pt-2 text-sm">
+                  <button
+                    onClick={handleDeleteReview}
+                    className="text-sm text-red-500 hover:underline hover:text-red-700 transition-colors"
+                  >
+                    Poista arvostelu
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-600 dark:text-gray-400">
+            Ei vielä arvosteluja.
+          </p>
+        )}
+      </div>
+
+      {/* Lisää arvostelu */}
+      {currentUser && !reviewSubmitted && (
+        <div className="mt-6 space-y-2 border-t pt-4">
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-white">
+            Jätä oma arvostelusi
+          </h3>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setRating(val)}
+                className={`text-2xl ${
+                  rating >= val ? 'text-yellow-500' : 'text-gray-300'
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <Textarea
+            rows={3}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Kirjoita arvostelusi..."
+            maxLength={maxCommentLength}
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            {comment.length}/{maxCommentLength} merkkiä
+          </p>
+          <Button onClick={submitReview}>Lähetä arvostelu</Button>
+        </div>
+      )}
+
+      {/* Arvostelujen ilmoitukset käyttöliittymässä */}
+      {reviewSubmitted && (
+        <p className="text-green-600 dark:text-green-400">
+          Kiitos arvostelustasi!
+        </p>
+      )}
+
+      {errorMessage && (
+        <p className="text-red-600 bg-red-100 px-3 py-2 rounded-md">
+          {errorMessage}
+        </p>
+      )}
+
+      {loading && <LoaderOverlay message="Poistetaan reseptiä..." />}
+    </div>
+  );
+}
