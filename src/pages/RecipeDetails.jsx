@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
-import LoaderOverlay from '../components/ui/loaderOverlay';
+import LoaderOverlay from '../components/ui/LoaderOverlay';
 import { useAuth } from '../context/AuthContext';
 import { Textarea } from '../components/ui/textarea';
 import MDEditor from '@uiw/react-md-editor';
