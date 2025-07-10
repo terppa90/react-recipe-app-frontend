@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
-import LoaderOverlay from '../components/ui/loaderOverlay';
+import LoaderOverlay from '../components/ui/LoaderOverlay';
 import Logo from '../assets/logo2.svg';
 import { useAuth } from '../context/AuthContext';
 import RecipeListLoader from '../components/ui/RecipeListLoader';

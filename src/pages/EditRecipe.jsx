@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
-import LoaderOverlay from '../components/ui/loaderOverlay';
+import LoaderOverlay from '../components/ui/LoaderOverlay';
 import MDEditor from '@uiw/react-md-editor';
 import useDarkMode from '../hooks/useDarkMode';
 
