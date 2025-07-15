@@ -71,7 +71,6 @@ export const AuthProvider = ({ children }) => {
       console.error('Virhe uloskirjautumisessa:', err);
     }
     setCurrentUser(null);
-    // localStorage.removeItem('user');
     window.location.href = '/';
   };
 
