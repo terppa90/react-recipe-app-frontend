@@ -13,7 +13,8 @@ import NotFound from './pages/NotFound';
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark';
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true; // oletus true jos ei ole tallennettu
   });
 
   useEffect(() => {
