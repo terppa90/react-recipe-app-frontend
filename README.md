@@ -7,7 +7,12 @@ Tämä on moderni fullstack-reseptisovellus, jossa käyttäjät voivat:
 - Hakea reseptejä reaaliaikaisella hakutoiminnolla
 - Kommentoida ja arvostella reseptejä
 - Käyttää Markdown-muotoilua ainesosien ja valmistusohjeiden syöttämisessä
+- nähdä _suositeltuja reseptejä_ jokaisen reseptin sivun alalaidassa
 - Käyttää tummaa/vaaleaa-tilaa
+
+Live-demo (Netlify): https://react-recipe-app-2025.netlify.app/
+
+backend (Render): https://react-recipe-app-backend.onrender.com
 
 ---
 
@@ -22,7 +27,6 @@ Tämä on moderni fullstack-reseptisovellus, jossa käyttäjät voivat:
 - Axios
 - Framer Motion
 - @uiw/react-md-editor (Markdown-editori)
-- Lucide React (ikonit)
 - React Context (autentikointi ja istunnon hallinta)
 
 ### Backend
@@ -30,7 +34,7 @@ Tämä on moderni fullstack-reseptisovellus, jossa käyttäjät voivat:
 - Node.js
 - Express
 - MongoDB & Mongoose
-- express-session
+- JWT-autentikaatio (httpOnly-cookie)
 - bcrypt
 - dotenv
 - CORS
@@ -40,19 +44,25 @@ Tämä on moderni fullstack-reseptisovellus, jossa käyttäjät voivat:
 ## 📁 Projektin rakenne
 
 ```
-.
-├── backend/          # Node + Express backend
-│   ├── controllers/  # Rekisteröinti, kirjautuminen, reseptit jne.
-│   ├── models/       # Mongoose-skeemat (User, Recipe)
-│   ├── routes/       # API-reitit (auth, recipes)
-│   └── index.js      # Sovelluksen päätiedosto
-├── src/              # React frontend
-│   ├── components/   # UI-komponentit
-│   ├── context/      # AuthContext
-│   ├── pages/        # Sivut (Home, Login, Register, RecipeDetails jne.)
-│   └── App.jsx       # Reititys ja layout
-├── public/
-├── .env              # Ympäristömuuttujat
+├── backend/                 # Node + Express backend
+│   ├── controllers/         # Logiikka: auth, reseptit, arvostelut
+│   ├── middleware/          # JWT-autentikaatio (authMiddleware.js)
+│   ├── models/              # Mongoose-mallit (User, Recipe)
+│   ├── routes/              # API-reitit (authRoutes.js, recipeRoutes.js)
+│   └── index.js            # Sovelluksen pääpiste
+│
+├── src/                     # React frontend
+│   ├── components/          # Yksittäiset UI-komponentit
+│   │   └── ui/              # Yleiset UI-elementit (Button, LoaderOverlay, jne.)
+│   ├── context/             # AuthContext (kirjautuminen, JWT-hallinta)
+│   ├── hooks/               # Custom hookit (esim. useDarkMode)
+│   ├── pages/               # Sivut (Home, Login, Register, RecipeDetails, EditRecipe, CreateRecipe)
+│   ├── assets/              # Staattiset kuvat ja ikonit
+│   ├── App.jsx              # Sovelluksen reititys ja tumma/vaalea-tilan logiikka
+│   └── main.jsx             # Reactin entry point
+│
+├── public/                  # Julkiset resurssit
+├── .env                     # Ympäristömuuttujat
 ├── package.json
 ├── vite.config.js
 └── README.md
@@ -65,13 +75,17 @@ Tämä on moderni fullstack-reseptisovellus, jossa käyttäjät voivat:
 1. **Kloonaa projekti**
 
 ```bash
-git clone https://github.com/kayttajasi/reseptisovellus.git
-cd reseptisovellus
+git clone https://github.com/terppa90/react-recipe-app-frontend
+cd react-recipe-app-frontend
+
+git clone https://github.com/terppa90/react-recipe-app-backend
+cd react-recipe-app-backend
 ```
 
 2. **Asenna riippuvuudet**
 
 ```bash
+cd frontend
 npm install
 cd backend
 npm install
@@ -88,17 +102,27 @@ JWT_SECRET=your_jwt_secret
 
 ```bash
 cd backend
-node index.js
+node index.js / npm start
 ```
 
 5. **Käynnistä frontend**
 
 ```bash
-cd ..
+cd frontend
 npm run dev
 ```
 
 ---
+
+## Autentikaatio
+
+Kirjautuminen käyttää JWT-autentikaatiota.
+
+Token tallennetaan httpOnly-cookieen (ei pääsyä JavaScriptille).
+
+Suojatut reitit (esim. reseptin muokkaus/poisto) on toteutettu authMiddleware.js:llä.
+
+Frontend tarkistaa kirjautumistilan AuthContext-komponentissa.
 
 ## 🧑‍💻 Osaamisen näyttö
 
@@ -109,5 +133,6 @@ Tämä projekti on suunniteltu erityisesti portfoliokäyttöön ja rekrytointia 
 - Markdown-editorin integrointi
 - Moderni UI Tailwindilla ja animaatioilla
 - Responsiivisuus ja saavutettavuus
+- Suositellut reseptit ja interaktiiviset komponentit
 
 ---

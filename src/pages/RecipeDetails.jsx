@@ -41,7 +41,7 @@ export default function RecipeDetails() {
 
     fetchRecipe(); // Ladataan resepti id:n perusteella
     fetchRelatedRecipes(); // Ladataan myös suositellut reseptit
-  }, [id]);
+  }, [id]); // Kun navigoidaan uuteen reseptiin, id muuttuu -> useEffect käynnistyy ja nollaa vanhat tilat ennen kuin hakee uuden reseptin.
 
   const fetchRecipe = async () => {
     try {
