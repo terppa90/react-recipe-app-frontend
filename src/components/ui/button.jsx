@@ -18,7 +18,7 @@ export function Button({
     <button
       onClick={onClick}
       // className={${base} ${sizes[size]} ${variants[variant]}}
-      className="px-4 py-2 rounded-2xl font-medium transition-colors text-base bg-blue-600 text-white hover:bg-blue-700"
+      className="px-4 py-2 rounded-2xl font-medium transition-colors text-base bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
     >
       {children}
     </button>

@@ -65,7 +65,9 @@ export default function CreateRecipe() {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${baseURL}/api/recipes`, newRecipe);
+      const res = await axios.post(`${baseURL}/api/recipes`, newRecipe, {
+        withCredentials: true,
+      });
       const newId = res.data._id;
       navigate(`/recipe/${newId}`);
     } catch (err) {

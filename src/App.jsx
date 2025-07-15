@@ -32,7 +32,7 @@ function App() {
       <div className="flex justify-end p-4">
         <button
           onClick={() => setDarkMode(!darkMode)}
-          className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded-xl"
+          className="text-sm px-3 py-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded-xl cursor-pointer"
         >
           {darkMode ? '☀️ Vaalea tila' : '🌙 Tumma tila'}
         </button>

@@ -3,25 +3,28 @@ import axios from 'axios';
 const baseURL = import.meta.env.VITE_API_URL;
 
 const AuthContext = createContext();
+
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  // const [user, setUser] = useState(() => {
-  //   const saved = localStorage.getItem('user');
-  //   return saved ? JSON.parse(saved) : null;
-  // });
+  const [loading, setLoading] = useState(true); // Alussa true, kun tarkistetaan kirjautuminen
 
-  // Haetaan käyttäjä kun sovellus käynnistyy
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await axios.get(`${baseURL}/api/auth/user`, {
-          withCredentials: true,
+          withCredentials: true, // Vaaditaan jotta cookie (JWT) lähetetään mukana
         });
+        console.log('Current user(logged in): ', res.data);
+
         setCurrentUser(res.data);
       } catch (err) {
+        console.log(err);
+
         setCurrentUser(null);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -30,24 +33,28 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, password) => {
     await axios.post(`${baseURL}/api/auth/register`, { username, password });
-    // const res = await axios.get('/api/auth/user', { withCredentials: true });
-    // setUser(res.data);
   };
 
   const login = async ({ username, password }) => {
     try {
-      const res = await axios.post(`${baseURL}/api/auth/login`, {
-        username,
-        password,
-      });
+      const res = await axios.post(
+        `${baseURL}/api/auth/login`,
+        {
+          username,
+          password,
+        },
+        { withCredentials: true }
+      );
       console.log('Kirjautuneen käyttäjän tiedot: ', res.data);
 
-      const userRes = await axios.get(`${baseURL}/api/auth/user`, {
-        withCredentials: true,
-      });
+      // const userRes = await axios.get(`${baseURL}/api/auth/user`, {
+      //   withCredentials: true,
+      // });
 
-      setCurrentUser(userRes.data);
-      localStorage.setItem('user', JSON.stringify(res.data));
+      // setCurrentUser(userRes.data);
+      setCurrentUser(res.data.user);
+      window.location.href = '/';
+      // localStorage.setItem('user', JSON.stringify(res.data));
     } catch (err) {
       console.error('Virhe kirjautumisessa:', err);
     }
@@ -64,20 +71,9 @@ export const AuthProvider = ({ children }) => {
       console.error('Virhe uloskirjautumisessa:', err);
     }
     setCurrentUser(null);
-    localStorage.removeItem('user');
+    // localStorage.removeItem('user');
     window.location.href = '/';
   };
-
-  // const login = async (username, password) => {
-  //   const res = await axios.post('/api/auth/login', { username, password });
-  //   localStorage.setItem('token', res.data.token);
-  //   setUser({ username });
-  // };
-
-  // const logout = () => {
-  //   localStorage.removeItem('token');
-  //   setUser(null);
-  // };
 
   return (
     <AuthContext.Provider value={{ currentUser, register, login, logout }}>

@@ -53,22 +53,6 @@ export default function EditRecipe() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validointi
-    // if (!recipe.title.trim()) {
-    //   alert('Reseptin nimi on pakollinen.');
-    //   return;
-    // }
-
-    // if (!recipe.ingredients.trim()) {
-    //   alert('Ainesosat ovat pakolliset.');
-    //   return;
-    // }
-
-    // if (!recipe.instructions.trim()) {
-    //   alert('Valmistusohjeet ovat pakolliset.');
-    //   return;
-    // }
-
     const newErrors = {};
 
     if (!recipe.title.trim()) newErrors.title = 'Nimi on pakollinen';
@@ -87,7 +71,9 @@ export default function EditRecipe() {
     setLoading(true);
 
     try {
-      await axios.put(`${baseURL}/api/recipes/${id}`, recipe);
+      await axios.put(`${baseURL}/api/recipes/${id}`, recipe, {
+        withCredentials: true,
+      });
       navigate(`/recipe/${id}`);
     } catch (error) {
       console.error('Virhe päivityksessä:', error);

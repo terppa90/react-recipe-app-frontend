@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Textarea } from '../components/ui/textarea';
 import MDEditor from '@uiw/react-md-editor';
 import useDarkMode from '../hooks/useDarkMode';
+import RecipeListLoader from '../components/ui/RecipeListLoader';
 
 export default function RecipeDetails() {
   const { id } = useParams();
@@ -22,21 +23,26 @@ export default function RecipeDetails() {
   const maxCommentLength = 500;
   const [notFound, setNotFound] = useState(false);
   const isDarkMode = useDarkMode();
-
-  // useEffect(() => {
-  //   axios
-  //     .get(`${baseURL}/api/recipes/${id}`)
-  //     .then((res) => setRecipe(res.data))
-  //     .catch((err) => console.error('Virhe reseptin haussa:', err));
-  // }, [id]);
+  // const [recentRecipes, setRecentRecipes] = useState([]);
+  const [suggestedRecipes, setSuggestedRecipes] = useState([]);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
+  // const [relatedRecipes, setRelatedRecipes] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setLoadingRecipe(true);
+    setRecipe(null);
+
     fetchRecipe();
+    fetchRelatedRecipes();
   }, [id]);
 
   const fetchRecipe = async () => {
     try {
       const res = await axios.get(`${baseURL}/api/recipes/${id}`);
+      console.log('Reseptin luoja: ', res.data.userId);
+
       setRecipe(res.data);
     } catch (err) {
       console.error('Virhe reseptin haussa:', err);
@@ -45,6 +51,22 @@ export default function RecipeDetails() {
       } else {
         setNotFound(true);
       }
+    } finally {
+      setLoadingRecipe(false);
+    }
+  };
+
+  const fetchRelatedRecipes = async () => {
+    setRelatedLoading(true);
+
+    try {
+      const res = await axios.get(`${baseURL}/api/recipes/suggested/${id}`);
+
+      setSuggestedRecipes(res.data);
+    } catch (err) {
+      console.error('Virhe suositeltuja reseptejä haettaessa:', err);
+    } finally {
+      setRelatedLoading(false);
     }
   };
 
@@ -106,22 +128,6 @@ export default function RecipeDetails() {
     }
   };
 
-  // const handleCommentSubmit = async (e) => {
-  //   e.preventDefault();
-  //   if (!commentText.trim()) return;
-
-  //   try {
-  //     const res = await axios.post(`${baseURL}/api/recipes/${id}/comments`, {
-  //       text: commentText,
-  //       username: currentUser.username,
-  //     });
-  //     setRecipe(res.data);
-  //     setCommentText('');
-  //   } catch (err) {
-  //     console.error('Virhe kommentin lähetyksessä:', err);
-  //   }
-  // };
-
   const handleDelete = async (id) => {
     const confirm = window.confirm('Haluatko varmasti poistaa tämän reseptin?');
     if (!confirm) return;
@@ -131,18 +137,20 @@ export default function RecipeDetails() {
     try {
       console.log('Tässä id: ' + id);
 
-      await axios.delete(`${baseURL}/api/recipes/${id}`);
+      await axios.delete(`${baseURL}/api/recipes/${id}`, {
+        withCredentials: true,
+      });
       navigate('/');
     } catch (error) {
-      console.error('Virhe poistettaessa:', error);
+      console.error(
+        'Virhe poistettaessa:',
+        error.response?.data || error.message
+      );
     }
   };
 
-  if (!recipe && !notFound) {
-    return (
-      // <p className="p-6 text-gray-700 dark:text-white">Ladataan reseptiä...</p>
-      <LoaderOverlay message="Ladataan reseptiä..." />
-    );
+  if ((!recipe && !notFound) || loadingRecipe) {
+    return <LoaderOverlay message="Ladataan reseptiä..." />;
   }
 
   if (notFound) {
@@ -169,6 +177,13 @@ export default function RecipeDetails() {
         {recipe.title}
       </h1>
 
+      {recipe.userId && (
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Reseptin lisäsi:{' '}
+          <span className="font-medium">{recipe.userId.username}</span>
+        </p>
+      )}
+
       {/* Kuvat */}
       {recipe.images && recipe.images.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -192,7 +207,6 @@ export default function RecipeDetails() {
       )}
 
       {/* Ainekset */}
-      {/* <MDEditor.Markdown source={recipe.ingredients} /> */}
       <div data-color-mode={isDarkMode ? 'dark' : 'light'}>
         <h2 className="text-xl my-4 font-semibold mt-4 text-gray-700 dark:text-white">
           Ainekset:
@@ -201,15 +215,9 @@ export default function RecipeDetails() {
           source={recipe.ingredients}
           className="p-4 rounded-xl prose dark:prose-invert max-w-none !bg-blue-50 dark:!bg-gray-800"
         />
-        {/* <ul className="list-disc list-inside text-gray-700 dark:text-gray-300">
-          {recipe.ingredients.split(/\r?\n|\r|,/).map((item, i) => (
-            <li key={i}>{item.trim()}</li>
-          ))}
-        </ul> */}
       </div>
 
       {/* Ohjeet */}
-      {/* <MDEditor.Markdown source={recipe.instructions} /> */}
       <div data-color-mode={isDarkMode ? 'dark' : 'light'}>
         <h2 className="text-xl my-4 font-semibold mt-4 text-gray-700 dark:text-white">
           Valmistusohjeet:
@@ -218,76 +226,22 @@ export default function RecipeDetails() {
           source={recipe.instructions}
           className="p-4 rounded-xl prose dark:prose-invert max-w-none !bg-blue-50 dark:!bg-gray-800"
         />
-        {/* <ol className="list-decimal list-inside text-gray-700 dark:text-gray-300 space-y-1">
-          {recipe.instructions
-            .split(/\r?\n|\r|\d+\./)
-            .filter((line) => line.trim() && !/^\d+\.$/.test(line.trim()))
-            .map((step, i) => (
-              <li key={i}>{step.trim()}</li>
-            ))}
-        </ol> */}
       </div>
-      <div className="mt-4 flex space-x-2">
-        <Link to={`/edit/${recipe._id}`}>
-          <Button size="sm">Muokkaa</Button>
-        </Link>
-        <Button
-          size="sm"
-          variant="destructive"
-          // className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          onClick={() => handleDelete(recipe._id)}
-        >
-          Poista
-        </Button>
-      </div>
-
-      {/* <div className="mt-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-          Kommentit
-        </h2>
-        {recipe.comments?.length > 0 ? (
-          <ul className="mt-2 space-y-2">
-            {recipe.comments.map((comment, i) => (
-              <li
-                key={i}
-                className="p-3 bg-gray-100 dark:bg-gray-700 rounded-xl"
-              >
-                <p className="text-sm text-gray-800 dark:text-white font-semibold">
-                  {comment.username}
-                </p>
-                <p className="text-gray-700 dark:text-gray-200">
-                  {comment.text}
-                </p>
-                <span className="text-xs text-gray-500">
-                  {new Date(comment.createdAt).toLocaleDateString('fi-FI')} klo{' '}
-                  {new Date(comment.createdAt).toLocaleTimeString('fi-FI', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 mt-2">Ei vielä kommentteja.</p>
-        )}
-      </div>
-
-      {currentUser && (
-        <form
-          onSubmit={handleCommentSubmit}
-          className="mt-4 flex flex-col gap-2"
-        >
-          <textarea
-            className="w-full border p-2 rounded-md"
-            rows={3}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Kirjoita kommentti..."
-          />
-          <Button type="submit">Lähetä kommentti</Button>
-        </form>
-      )} */}
+      {currentUser?.username === recipe.userId?.username && (
+        <div className="mt-4 flex space-x-2">
+          <Link to={`/edit/${recipe._id}`}>
+            <Button size="sm">Muokkaa</Button>
+          </Link>
+          <Button
+            size="sm"
+            variant="destructive"
+            // className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            onClick={() => handleDelete(recipe._id)}
+          >
+            Poista
+          </Button>
+        </div>
+      )}
 
       <div
         className="mt-6 space-y-4"
@@ -352,7 +306,7 @@ export default function RecipeDetails() {
                 key={val}
                 type="button"
                 onClick={() => setRating(val)}
-                className={`text-2xl ${
+                className={`text-2xl cursor-pointer ${
                   rating >= val ? 'text-yellow-500' : 'text-gray-300'
                 }`}
               >
@@ -386,6 +340,37 @@ export default function RecipeDetails() {
           {errorMessage}
         </p>
       )}
+
+      <div className="mt-10">
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-white mb-4">
+          Katso myös:
+        </h2>
+
+        {relatedLoading ? (
+          <RecipeListLoader />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {suggestedRecipes.map((r) => (
+              <Link
+                to={`/recipe/${r._id}`}
+                key={r._id}
+                className="block border rounded-xl overflow-hidden hover:shadow-lg transition"
+              >
+                <img
+                  src={r.image}
+                  alt={r.title}
+                  className="w-full h-40 object-cover"
+                />
+                <div className="p-3 text-gray-800 dark:text-white">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    {r.title}
+                  </h2>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {loading && <LoaderOverlay message="Poistetaan reseptiä..." />}
     </div>
