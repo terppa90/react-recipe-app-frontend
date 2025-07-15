@@ -33,6 +33,9 @@ export default function RecipeDetails() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setLoadingRecipe(true);
     setRecipe(null);
+    setReviewSubmitted(false); // Kun id vaihtuu, nollataan arvostelun tila
+    setComment(''); // ja nollataan kommentti
+    setRating(0); // sekä rating nollataan myös
 
     fetchRecipe();
     fetchRelatedRecipes();
