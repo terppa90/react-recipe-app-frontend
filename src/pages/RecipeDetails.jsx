@@ -31,14 +31,16 @@ export default function RecipeDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setLoadingRecipe(true);
+    setLoadingRecipe(true); // Latausanimaatio käynnistyy
     setRecipe(null);
     setReviewSubmitted(false); // Kun id vaihtuu, nollataan arvostelun tila
     setComment(''); // ja nollataan kommentti
     setRating(0); // sekä rating nollataan myös
+    setErrorMessage(''); // Nollataan myös ilmoitukset kun siirrytään uuteen reseptiin
+    setReviewSubmitted(false);
 
-    fetchRecipe();
-    fetchRelatedRecipes();
+    fetchRecipe(); // Ladataan resepti id:n perusteella
+    fetchRelatedRecipes(); // Ladataan myös suositellut reseptit
   }, [id]);
 
   const fetchRecipe = async () => {
